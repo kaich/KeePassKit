@@ -24,6 +24,8 @@
 
 @implementation NSData (KPKXor)
 
+static const NSUInteger kKPKStrideSize = 256;
+
 - (NSData *)kpk_dataXoredWithKey:(NSData *)key {
   if(key.length < self.length) {
     NSAssert(NO, @"Key has to be at least as long as data");
@@ -32,13 +34,23 @@
   if(self.length == 0) {
     return nil;
   }
-  uint8_t buffer[self.length];
-  [self getBytes:buffer length:self.length];
+  
+  NSMutableData *buffer = [self mutableCopy];
   const uint8_t *keyPointer = key.bytes;
-  for(NSUInteger byteIndex = 0; byteIndex < self.length; byteIndex++) {
-    buffer[byteIndex] ^= keyPointer[byteIndex];
+  uint8_t *dataPointer = buffer.mutableBytes;
+  // TODO: check if this can benefit from dispatch_apply
+  NSUInteger count = self.length / kKPKStrideSize;
+  dispatch_apply(count, DISPATCH_APPLY_AUTO, ^(size_t stride) {
+    for(NSUInteger byteIndex = 0; byteIndex < kKPKStrideSize; byteIndex++) {
+      NSUInteger actualIndex = stride * kKPKStrideSize + byteIndex;
+      dataPointer[actualIndex] ^= keyPointer[actualIndex];
+    }
+  });
+  /* update last unaligend chunk */
+  for(NSUInteger byteIndex = count * kKPKStrideSize; byteIndex < self.length; byteIndex++) {
+    dataPointer[byteIndex] ^= keyPointer[byteIndex];
   }
-  return [NSData dataWithBytes:buffer length:self.length];
+  return [buffer copy];
 }
 
 @end

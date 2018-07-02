@@ -1,6 +1,7 @@
 # KeePassKit
 
 [![Build Status](https://travis-ci.org/MacPass/KeePassKit.svg?branch=master)](https://travis-ci.org/MacPass/KeePassKit)
+[![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage)
 
 KeePass database loading, storing and manipulation framework.
 It's inspired by [MiniKeePass](https://github.com/MiniKeePass/MiniKeePass) and [KeePass Database Library](https://github.com/mpowrie/KeePassLib) but has diverged a lot over the development.
@@ -9,12 +10,13 @@ It's inspired by [MiniKeePass](https://github.com/MiniKeePass/MiniKeePass) and [
 
 [Chester Liu](skyline75489@outlook.com)
 [Jordan Sechler](jordan.sechler@gmail.com)
+[Maxime Epain](me@maxep.me)
 
 ## License
 
 KeePassKit - Cocoa KeePass Library
 Copyright (c) 2012-2016  Michael Starke, HicknHack Software GmbH
-  
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or

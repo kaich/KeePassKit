@@ -27,6 +27,9 @@
 
 @implementation KPKBinary
 
+@dynamic protect;
+@dynamic data;
+
 + (BOOL)supportsSecureCoding {
   return YES;
 }
@@ -35,20 +38,13 @@
   self = [super init];
   if(self) {
     _name = [name copy];
-    _data = [data copy];
-    _protectInMemory = NO;
+    _internalData = [[KPKData alloc] initWithUnprotectedData:data];
   }
   return self;
 }
 
 - (instancetype)init {
   self = [self initWithName:nil data:nil];
-  return self;
-}
-
-- (instancetype)initWithName:(NSString *)name string:(NSString *)value compressed:(BOOL)compressed {
-  NSData *data = [self _dataForEncodedString:value compressed:compressed];
-  self = [self initWithName:name data:data];
   return self;
 }
 
@@ -72,24 +68,23 @@
 - (instancetype)initWithCoder:(NSCoder *)aDecoder {
   NSString *name = [aDecoder decodeObjectOfClass:NSString.class forKey:NSStringFromSelector(@selector(name))];
   NSData *data = [aDecoder decodeObjectOfClass:NSData.class forKey:NSStringFromSelector(@selector(data))];
-  BOOL protected = [aDecoder decodeBoolForKey:NSStringFromSelector(@selector(protectInMemory))];
+  BOOL protected = [aDecoder decodeBoolForKey:NSStringFromSelector(@selector(protect))];
   self = [self initWithName:name data:data];
-  self.protectInMemory = protected;
+  self.protect = protected;
   return self;
 }
 
 - (void)encodeWithCoder:(NSCoder *)aCoder {
   [aCoder encodeObject:self.name forKey:NSStringFromSelector(@selector(name))];
   [aCoder encodeObject:self.data forKey:NSStringFromSelector(@selector(data))];
-  [aCoder encodeBool:self.protectInMemory forKey:NSStringFromSelector(@selector(protectInMemory))];
+  [aCoder encodeBool:self.protect forKey:NSStringFromSelector(@selector(protect))];
 }
 
 - (instancetype)copyWithZone:(NSZone *)zone {
   KPKBinary *copy = [[KPKBinary allocWithZone:zone] init];
   if(copy) {
     copy.name = _name;
-    copy.data = _data;
-    copy.protectInMemory = _protectInMemory;
+    copy.internalData = _internalData;
   }
   return copy;
 }
@@ -105,7 +100,7 @@
 }
 
 - (BOOL)isEqualtoBinary:(KPKBinary *)binary {
-  return [self.name isEqualToString:binary.name] && [self.data isEqualToData:binary.data] && (self.protectInMemory == binary.protectInMemory);
+  return [self.name isEqualToString:binary.name] && [self.data isEqualToData:binary.data] && (self.protect == binary.protect);
 }
 
 - (NSUInteger)hash {
@@ -114,28 +109,29 @@
   
   result = prime * result + (self.name).hash;
   result = prime * result + (self.data).hash;
-  result = prime * result + self.protectInMemory;
+  result = prime * result + self.protect;
   
   return result;
 }
 
+- (NSData *)data {
+  return self.internalData.data;
+}
+
+- (void)setData:(NSData *)data {
+  self.internalData.data = data;
+}
+
+- (BOOL)protect {
+  return self.internalData.protect;
+}
+
+- (void)setProtect:(BOOL)protect {
+  self.internalData.protect = protect;
+}
+
 - (BOOL)saveToLocation:(NSURL *)location error:(NSError *__autoreleasing *)error {
   return [self.data writeToURL:location options:0 error:error];
-}
-
-- (NSData *)_dataForEncodedString:(NSString *)string compressed:(BOOL)compressed {
-  NSData *data = [[NSData alloc] initWithBase64EncodedString:string options:NSDataBase64DecodingIgnoreUnknownCharacters];
-  if(data && compressed) {
-    return data.kpk_gzipInflated;
-  }
-  return data;
-}
-
-- (NSString *)encodedStringUsingCompression:(BOOL)compress {
-  if(compress) {
-    return [self.data.kpk_gzipDeflated base64EncodedStringWithOptions:0];
-  }
-  return [self.data base64EncodedStringWithOptions:0];
 }
 
 @end

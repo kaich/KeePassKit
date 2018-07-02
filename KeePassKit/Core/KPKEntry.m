@@ -437,11 +437,11 @@ NSSet *_protectedKeyPathForAttribute(SEL aSelector) {
 }
 
 - (BOOL)_protectValueForKey:(NSString *)key {
-  return [self attributeWithKey:key].isProtected;
+  return [self attributeWithKey:key].protect;
 }
 
 - (void)_setProtect:(BOOL)protect valueForkey:(NSString *)key {
-  [self attributeWithKey:key].isProtected = protect;
+  [self attributeWithKey:key].protect = protect;
 }
 
 - (NSString *)valueForAttributeWithKey:(NSString *)key {
@@ -714,6 +714,14 @@ NSSet *_protectedKeyPathForAttribute(SEL aSelector) {
   }
 }
 #pragma mark Attachments
+- (KPKBinary *)binaryWithName:(NSString *)name {
+  for(KPKBinary *binary in self.mutableBinaries) {
+    if([binary.name isEqualToString:name]) {
+      return binary;
+    }
+  }
+  return nil;
+}
 
 - (void)addBinary:(KPKBinary *)binary {
   [self _addBinary:binary atIndex:self.mutableBinaries.count];
@@ -725,6 +733,14 @@ NSSet *_protectedKeyPathForAttribute(SEL aSelector) {
   }
   if(index > self.mutableBinaries.count) {
     return; // index out of bounds!
+  }
+  KPKBinary *duplicate = [self binaryWithName:binary.name];
+  if(binary == duplicate) {
+    NSLog(@"Error: Trying to re-add an already added binary attachment!");
+    return; // do not add the same object twice!
+  }
+  if(duplicate) {
+    binary.name = [self _proposedNameForBinaryName:duplicate.name];
   }
   [[self.undoManager prepareWithInvocationTarget:self] removeBinary:binary];
   [self touchModified];
@@ -746,6 +762,24 @@ NSSet *_protectedKeyPathForAttribute(SEL aSelector) {
     [self removeObjectFromMutableBinariesAtIndex:index];
   }
 }
+
+
+- (NSString *)_proposedNameForBinaryName:(NSString *)name {
+  NSUInteger counter = 1;
+  NSString *extension = name.pathExtension;
+  NSString *base = [name stringByDeletingPathExtension];
+  NSString *newName = name;
+  while(nil != [self binaryWithName:newName]) {
+    if(extension.length > 0) {
+      newName = [NSString stringWithFormat:@"%@-%lu.%@", base, (unsigned long)counter++, extension];
+    }
+    else {
+      newName = [NSString stringWithFormat:@"%@-%lu", base, (unsigned long)counter++];
+    }
+  }
+  return newName;
+}
+
 
 - (void)_regenerateUUIDs {
   [super _regenerateUUIDs];

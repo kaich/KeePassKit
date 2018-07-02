@@ -20,13 +20,14 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+#import <KissXML/KissXML.h>
+
 #import "KPKTree+Serializing.h"
 
 #import "KPKArchiver.h"
 #import "KPKUnarchiver.h"
-#import "KPKXmlTreeWriter.h"
 #import "KPKXmlTreeReader.h"
-#import "DDXMLDocument.h"
+#import "KPKXmlTreeWriter.h"
 
 @implementation KPKTree (Serializing)
 
@@ -49,6 +50,11 @@
   if(!data) {
     return nil;
   }
+  self = [self initWithXmlData:data error:error];
+  return self;
+}
+
+- (instancetype)initWithXmlData:(NSData *)data error:(NSError *__autoreleasing *)error {
   KPKXmlTreeReader *reader = [[KPKXmlTreeReader alloc] initWithData:data];
   self = [reader tree:error];
   return self;

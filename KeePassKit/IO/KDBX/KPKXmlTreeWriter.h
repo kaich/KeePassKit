@@ -31,7 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class KPKXmlTreeWriter;
 @class KPKBinary;
 @class KPKRandomStream;
-
+@class KPKData;
 @protocol KPKXmlTreeWriterDelegate <NSObject>
 
 @required
@@ -43,22 +43,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSData *)headerHashForWriter:(KPKXmlTreeWriter *)writer;
 /**
  Called by the writer to retrieve a list of all available binaries.
- The wirter will only send this message, if the output is not KDBX4.
- For KDBX$ only references will get retrieved!
+ The writer will not send this message, if the output is a KDBX4 binary,
+ since then Binaries aren't stored inside the XML tree.
+ For KDBX3 binariy files ore XML files this is called and binaries should be supplied!
 
  @param writer the calling writer
  @return NSArray containgin the binaries.
  */
-- (NSArray *)binariesForWriter:(KPKXmlTreeWriter *)writer;
-/**
- Called by the writer to retrieve a unique refernce for a given binary.
- This is called regardless of the format!
- 
- @param writer Calling writer
- @param binary The binary to get a reference key for
- @return the unique reference for the binary.
- */
-- (NSUInteger)writer:(KPKXmlTreeWriter *)writer referenceForBinary:(KPKBinary *)binary;
+- (NSArray<KPKData *> *)binaryDataForWriter:(KPKXmlTreeWriter *)writer;
 
 @end
 

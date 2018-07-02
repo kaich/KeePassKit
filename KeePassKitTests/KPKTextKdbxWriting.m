@@ -14,6 +14,7 @@
 @interface KPKTestKdbxWriting : XCTestCase
 @property (strong) KPKTree *tree;
 @property (strong) KPKEntry *entry;
+@property (strong) KPKEntry *anotherEntry;
 @property (strong) NSData *data;
 @end
 
@@ -41,13 +42,25 @@
   
   /* kill all time info that cannot be serialized to ensure equality checks work out! */
   [self.entry.timeInfo _reducePrecicionToSeconds];
+  
+  self.anotherEntry = [[KPKEntry alloc] init];
+  self.anotherEntry.title = @"TestEntryB";
+  
+  [self.anotherEntry addBinary:[[KPKBinary alloc] initWithName:@"Binary0" data:self.data]];
+  [self.anotherEntry addBinary:[[KPKBinary alloc] initWithName:@"Binary1" data:self.data]];
+  
+  [self.anotherEntry addToGroup:self.tree.root.groups.firstObject];
+  
+  /* kill all time info that cannot be serialized to ensure equality checks work out! */
+  [self.anotherEntry.timeInfo _reducePrecicionToSeconds];
+
 }
 
 - (void)testKdbx4BinarySerialization {
   KPKCompositeKey *key = [[KPKCompositeKey alloc] initWithPassword:@"Test" key:nil];
   self.tree.metaData.keyDerivationParameters = [[KPKArgon2KeyDerivation alloc] init].parameters;
   NSError *error;
-  NSData *data = [self.tree encryptWithKey:key format:self.tree.minimumVersion.format error:&error];
+  NSData *data = [self.tree encryptWithKey:key format:KPKDatabaseFormatKdbx error:&error];
   
   XCTAssertNotNil(data);
   XCTAssertNil(error);
@@ -60,7 +73,84 @@
   KPKEntry *entry = loadedTree.root.groups.firstObject.entries.firstObject;
   
   XCTAssertEqual(KPKComparsionEqual, [self.entry compareToEntry:entry]);
+  XCTAssertEqual(entry.binaries.count, 3);
+  /* explicitly test binaries for equality */
+  XCTAssertEqualObjects(entry.binaries[0].data, self.data);
+  XCTAssertEqualObjects(entry.binaries[1].data, self.data);
+  XCTAssertEqualObjects(entry.binaries[2].data, self.data);
+  
+  KPKEntry *anotherEntry = loadedTree.root.groups.firstObject.entries.lastObject;
+  
+  XCTAssertEqual(KPKComparsionEqual, [self.anotherEntry compareToEntry:anotherEntry]);
+  XCTAssertEqual(anotherEntry.binaries.count, 2);
+  /* explicitly test binaries for equality */
+  XCTAssertEqualObjects(anotherEntry.binaries[0].data, self.data);
+  XCTAssertEqualObjects(anotherEntry.binaries[1].data, self.data);
+  
 }
+
+- (void)testKdbx3BinarySerialization {
+  KPKCompositeKey *key = [[KPKCompositeKey alloc] initWithPassword:@"Test" key:nil];
+  NSError *error;
+  NSData *data = [self.tree encryptWithKey:key format:KPKDatabaseFormatKdbx error:&error];
+  
+  XCTAssertNotNil(data);
+  XCTAssertNil(error);
+  
+  KPKTree *loadedTree = [[KPKTree alloc] initWithData:data key:key error:&error];
+  
+  XCTAssertNotNil(loadedTree);
+  XCTAssertEqualObjects(loadedTree.metaData.keyDerivationParameters[KPKKeyDerivationOptionUUID], [KPKAESKeyDerivation uuid].kpk_uuidData);
+  
+  KPKEntry *entry = loadedTree.root.groups.firstObject.entries.firstObject;
+  
+  XCTAssertEqual(KPKComparsionEqual, [self.entry compareToEntry:entry]);
+  XCTAssertEqual(entry.binaries.count, 3);
+  /* explicitly test binaries for equality */
+  XCTAssertEqualObjects(entry.binaries[0].data, self.data);
+  XCTAssertEqualObjects(entry.binaries[1].data, self.data);
+  XCTAssertEqualObjects(entry.binaries[2].data, self.data);
+  
+  KPKEntry *anotherEntry = loadedTree.root.groups.firstObject.entries.lastObject;
+  
+  XCTAssertEqual(KPKComparsionEqual, [self.anotherEntry compareToEntry:anotherEntry]);
+  XCTAssertEqual(anotherEntry.binaries.count, 2);
+  /* explicitly test binaries for equality */
+  XCTAssertEqualObjects(anotherEntry.binaries[0].data, self.data);
+  XCTAssertEqualObjects(anotherEntry.binaries[1].data, self.data);
+}
+
+- (void)testXMLBinarySerialization {
+  NSError *error;
+  NSData *data = self.tree.xmlData;
+  
+  XCTAssertNotNil(data);
+  XCTAssertNil(error);
+  
+  KPKTree *loadedTree = [[KPKTree alloc] initWithXmlData:data error:&error];
+  
+  XCTAssertNotNil(loadedTree);
+  
+  KPKEntry *entry = loadedTree.root.groups.firstObject.entries.firstObject;
+  
+  XCTAssertEqual(KPKComparsionEqual, [self.entry compareToEntry:entry]);
+  XCTAssertEqual(entry.binaries.count, 3);
+  /* explicitly test binaries for equality */
+  XCTAssertEqualObjects(entry.binaries[0].data, self.data);
+  XCTAssertEqualObjects(entry.binaries[1].data, self.data);
+  XCTAssertEqualObjects(entry.binaries[2].data, self.data);
+  
+  KPKEntry *anotherEntry = loadedTree.root.groups.firstObject.entries.lastObject;
+  
+  XCTAssertEqual(KPKComparsionEqual, [self.anotherEntry compareToEntry:anotherEntry]);
+  XCTAssertEqual(anotherEntry.binaries.count, 2);
+  /* explicitly test binaries for equality */
+  XCTAssertEqualObjects(anotherEntry.binaries[0].data, self.data);
+  XCTAssertEqualObjects(anotherEntry.binaries[1].data, self.data);
+}
+
+
+
 
 
 @end
